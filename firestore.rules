@@ -7,12 +7,10 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email_verified == true;
     }
 
-    // Quem recebe (admin) fica em config/admins, definido pelo próprio app.
+    // Todo mundo com conta e e-mail confirmado é admin: vê e edita tudo
+    // (cobranças de todos, compras, modelos, chave PIX).
     function isAdmin() {
-      let caminho = /databases/$(database)/documents/config/admins;
-      return verificado()
-        && exists(caminho)
-        && request.auth.token.email in get(caminho).data.emails;
+      return verificado();
     }
 
     function isDono(divida) {

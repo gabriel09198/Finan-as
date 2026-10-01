@@ -9,11 +9,18 @@ const ESCALA_MAXIMA = 10;
 // Quanto cresce por segundo segurando o clique (multiplicativo: 1.8 = +80%/s).
 const CRESCIMENTO_POR_SEGUNDO = 1.8;
 
-// Recorte quadrado do rosto dentro da foto original (201×246).
-const RECORTE = { x: 5, y: 33, lado: 190 };
+// Fotos possíveis (em public/). Uma é sorteada a cada carregamento da página.
+// "recorte" é o quadrado do rosto dentro da foto original.
+export const CABECAS = [
+  { arquivo: "/cursor-cabeca.png", recorte: { x: 5, y: 33, lado: 190 } }, // 201×246
+  { arquivo: "/cursor-cabeca-2.png", recorte: { x: 30, y: 10, lado: 300 } }, // 372×334
+  { arquivo: "/cursor-cabeca-3.png", recorte: { x: 22, y: 4, lado: 170 } }, // 200×181
+];
+
+type Recorte = (typeof CABECAS)[number]["recorte"];
 
 /** Desenha a foto recortada em círculo com borda neon. Resolução alta para continuar nítida ao crescer. */
-function desenharCabeca(img: HTMLImageElement): string {
+export function desenharCabeca(img: HTMLImageElement, recorte: Recorte): string {
   const lado = 256;
   const canvas = document.createElement("canvas");
   canvas.width = lado;
@@ -34,7 +41,7 @@ function desenharCabeca(img: HTMLImageElement): string {
   ctx.beginPath();
   ctx.arc(centro, centro, raio, 0, Math.PI * 2);
   ctx.clip();
-  ctx.drawImage(img, RECORTE.x, RECORTE.y, RECORTE.lado, RECORTE.lado, centro - raio, centro - raio, raio * 2, raio * 2);
+  ctx.drawImage(img, recorte.x, recorte.y, recorte.lado, recorte.lado, centro - raio, centro - raio, raio * 2, raio * 2);
   ctx.restore();
 
   const borda = ctx.createLinearGradient(0, 0, lado, lado);
@@ -53,7 +60,7 @@ const EH_CAMPO_DE_TEXTO =
   'input:not([type="checkbox"]):not([type="radio"]):not([type="date"]):not([type="button"]):not([type="submit"]), textarea, select, [contenteditable="true"]';
 
 /**
- * Troca o cursor do site pela cabeça da foto em public/cursor-cabeca.png.
+ * Troca o cursor do site pela cabeça de uma das fotos em CABECAS (sorteada a cada carregamento).
  * Segurando o clique, a cabeça vai crescendo até soltar. Em campos de texto
  * volta o cursor normal de digitação. Em telas de toque não faz nada.
  */
@@ -65,13 +72,14 @@ export function CursorCabeca() {
     let cancelado = false;
     let limpar = () => {};
 
+    const sorteada = CABECAS[Math.floor(Math.random() * CABECAS.length)];
     const img = new Image();
-    img.src = "/cursor-cabeca.png";
+    img.src = sorteada.arquivo;
     img.onload = () => {
       if (cancelado) return;
 
       const cabeca = document.createElement("img");
-      cabeca.src = desenharCabeca(img);
+      cabeca.src = desenharCabeca(img, sorteada.recorte);
       cabeca.alt = "";
       cabeca.setAttribute("aria-hidden", "true");
       Object.assign(cabeca.style, {

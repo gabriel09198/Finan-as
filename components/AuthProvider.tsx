@@ -1,18 +1,15 @@
 "use client";
 
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db, firebaseConfigurado } from "@/lib/firebase";
 
 interface EstadoAuth {
   usuario: User | null;
   carregando: boolean;
-  // Quem recebe os pagamentos (lista em config/admins).
+  // Todo mundo com e-mail confirmado é admin (vê e edita tudo). Ver isAdmin() em firestore.rules.
   admin: boolean;
-  admins: string[];
-  // Ainda ninguém foi definido como recebedor (primeiro acesso).
-  semRecebedor: boolean;
   // Força re-render depois de user.reload() (ex.: e-mail recém-verificado).
   atualizar: () => Promise<void>;
 }
@@ -21,39 +18,24 @@ const AuthContext = createContext<EstadoAuth>({
   usuario: null,
   carregando: true,
   admin: false,
-  admins: [],
-  semRecebedor: false,
   atualizar: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<User | null>(null);
-  const [authCarregando, setAuthCarregando] = useState(firebaseConfigurado);
-  // null = ainda carregando a lista de recebedores do usuário atual.
-  const [admins, setAdmins] = useState<{ uid: string; emails: string[] | null } | null>(null);
+  const [carregando, setCarregando] = useState(firebaseConfigurado);
   const [versao, setVersao] = useState(0);
 
   useEffect(() => {
     if (!firebaseConfigurado) return;
     return onAuthStateChanged(auth(), (u) => {
       setUsuario(u);
-      setAuthCarregando(false);
+      setCarregando(false);
     });
   }, []);
 
-  useEffect(() => {
-    if (!usuario) return;
-    const uid = usuario.uid;
-    return onSnapshot(
-      doc(db(), "config", "admins"),
-      (snap) =>
-        setAdmins({ uid, emails: snap.exists() ? ((snap.data().emails as string[]) ?? []) : null }),
-      () => setAdmins({ uid, emails: [] }),
-    );
-  }, [usuario]);
-
-  // Perfil mínimo (nome + e-mail + ID) para o recebedor poder selecionar a pessoa
-  // numa compra em grupo. Salvo já no primeiro login, mesmo antes de confirmar o
+  // Perfil mínimo (nome + e-mail + ID) para a pessoa poder ser selecionada numa
+  // compra em grupo. Salvo já no primeiro login, mesmo antes de confirmar o
   // e-mail — senão quem esquece o link de confirmação nunca aparece na lista.
   useEffect(() => {
     if (!usuario?.email) return;
@@ -93,20 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const adminsDoUsuario = usuario && admins?.uid === usuario.uid ? admins : null;
-  const email = usuario?.email?.toLowerCase() ?? "";
-  const lista = adminsDoUsuario?.emails ?? [];
-
   return (
     <AuthContext.Provider
-      value={{
-        usuario,
-        carregando: authCarregando || (!!usuario && !adminsDoUsuario),
-        admin: !!email && lista.includes(email),
-        admins: lista,
-        semRecebedor: !!adminsDoUsuario && adminsDoUsuario.emails === null,
-        atualizar,
-      }}
+      value={{ usuario, carregando, admin: !!usuario?.emailVerified, atualizar }}
     >
       {children}
     </AuthContext.Provider>

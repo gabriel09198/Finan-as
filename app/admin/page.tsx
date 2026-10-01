@@ -14,7 +14,6 @@ import {
 } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { AreaProtegida } from "@/components/AreaProtegida";
-import { useAuth } from "@/components/AuthProvider";
 import { idCurto, ModalCompraGrupo } from "@/components/ModalCompraGrupo";
 import {
   agruparPedidos,
@@ -84,7 +83,6 @@ function Painel() {
   const [busca, setBusca] = useState("");
   const [novaPara, setNovaPara] = useState<{ nome: string; email: string } | null>(null);
   const [editandoPix, setEditandoPix] = useState(false);
-  const [editandoRecebedores, setEditandoRecebedores] = useState(false);
   // null = fechado; "vazia" = do zero; com modelo = pré-preenchida (modeloId = editar modelo salvo)
   const [novaCompra, setNovaCompra] = useState<
     "vazia" | { modelo: ModeloCompra; modeloId?: string } | null
@@ -214,9 +212,6 @@ function Painel() {
           <button className={botaoSecundario + " py-2.5"} onClick={() => setVendoPessoas(true)}>
             <Icone nome="usuarios" /> Pessoas
             <span className="font-mono text-xs text-zinc-500">{contas.length}</span>
-          </button>
-          <button className={botaoSecundario + " py-2.5"} onClick={() => setEditandoRecebedores(true)}>
-            <Icone nome="usuarios" /> Recebedores
           </button>
           <button className={botaoSecundario + " py-2.5"} onClick={() => setEditandoPix(true)}>
             <Icone nome="chave" /> Chave PIX
@@ -436,7 +431,6 @@ function Painel() {
       )}
       {vendoPessoas && <ModalPessoas contas={contas} onFechar={() => setVendoPessoas(false)} />}
       {editandoPix && <ModalConfigPix atual={config} onFechar={() => setEditandoPix(false)} />}
-      {editandoRecebedores && <ModalRecebedores onFechar={() => setEditandoRecebedores(false)} />}
     </div>
   );
 }
@@ -778,101 +772,6 @@ function ModalConfigPix({ atual, onFechar }: { atual: ConfigPix | null; onFechar
           </button>
         </div>
       </form>
-    </Modal>
-  );
-}
-
-function ModalRecebedores({ onFechar }: { onFechar: () => void }) {
-  const { admins, usuario } = useAuth();
-  const [novo, setNovo] = useState("");
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState("");
-  const meuEmail = usuario?.email?.toLowerCase() ?? "";
-
-  async function salvar(lista: string[]) {
-    setSalvando(true);
-    setErro("");
-    try {
-      await setDoc(doc(db(), "config", "admins"), { emails: lista });
-      return true;
-    } catch {
-      setErro("Não foi possível salvar. Tente novamente.");
-      return false;
-    } finally {
-      setSalvando(false);
-    }
-  }
-
-  async function adicionar(e: React.FormEvent) {
-    e.preventDefault();
-    const email = novo.trim().toLowerCase();
-    if (!email || admins.includes(email)) return;
-    if (await salvar([...admins, email])) setNovo("");
-  }
-
-  function remover(email: string) {
-    if (admins.length <= 1) return;
-    const aviso =
-      email === meuEmail
-        ? "Remover você mesmo? Você perde o acesso ao painel na hora."
-        : `Remover ${email} dos recebedores?`;
-    if (window.confirm(aviso)) salvar(admins.filter((a) => a !== email));
-  }
-
-  return (
-    <Modal
-      titulo="Recebedores"
-      subtitulo="Quem pode cadastrar dívidas, confirmar pagamentos e definir a chave PIX."
-      onFechar={onFechar}
-    >
-      <ul className="space-y-2">
-        {admins.map((email) => (
-          <li
-            key={email}
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.03] p-3 ring-1 ring-white/10"
-          >
-            <Avatar nome={email} tamanho="h-9 w-9" />
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">
-              {email}
-              {email === meuEmail && (
-                <span className="ml-2 text-xs font-normal text-zinc-400">(você)</span>
-              )}
-            </span>
-            {admins.length > 1 && (
-              <button
-                className="rounded-lg p-2 text-zinc-400 transition hover:bg-rose-500/10 hover:text-rose-300"
-                onClick={() => remover(email)}
-                disabled={salvando}
-                title="Remover"
-              >
-                <Icone nome="lixeira" />
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      <form onSubmit={adicionar} className="mt-5">
-        <label className={labelCls}>Adicionar recebedor</label>
-        <div className="flex gap-2">
-          <input
-            type="email"
-            className={inputCls}
-            value={novo}
-            onChange={(e) => setNovo(e.target.value)}
-            placeholder="email@exemplo.com"
-            required
-          />
-          <button type="submit" disabled={salvando} className={botaoPrimario} title="Adicionar">
-            <Icone nome="mais" />
-          </button>
-        </div>
-        <p className="mt-1.5 text-xs text-zinc-500">
-          A pessoa entra no sistema com esse e-mail e já vai direto para o painel de recebedor.
-        </p>
-      </form>
-
-      {erro && <p className="mt-3 text-sm text-rose-300">{erro}</p>}
     </Modal>
   );
 }

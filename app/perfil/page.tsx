@@ -50,7 +50,7 @@ function Perfil() {
             <p className="truncate font-mono text-sm text-zinc-400">{usuario.email}</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               <span className="rounded-full bg-white/[0.05] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400 ring-1 ring-inset ring-white/10">
-                {admin ? "Recebedor" : "Participante"}
+                {admin ? "Admin" : "Aguardando confirmação"}
               </span>
               {usuario.emailVerified && (
                 <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-300 ring-1 ring-inset ring-emerald-400/25">
@@ -119,7 +119,7 @@ function FormNome() {
     setMsg(null);
     try {
       await updateProfile(u, { displayName: nome.trim() });
-      // mantém o perfil (visto pelo recebedor ao montar compras) com o mesmo nome
+      // mantém o perfil (usado para selecionar a pessoa nas compras) com o mesmo nome
       await setDoc(
         doc(db(), "usuarios", u.uid),
         { nome: nome.trim(), email: u.email?.toLowerCase() ?? "", atualizadoEm: serverTimestamp() },

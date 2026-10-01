@@ -31,7 +31,7 @@ import {
 
 export default function MinhasDividasPage() {
   return (
-    <AreaProtegida papel="devedor">
+    <AreaProtegida papel="todos">
       <MinhasDividas />
     </AreaProtegida>
   );

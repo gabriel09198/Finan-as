@@ -1,11 +1,10 @@
 "use client";
 
 import { sendEmailVerification, signOut } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "./AuthProvider";
 import {
   Avatar,
@@ -20,37 +19,34 @@ import {
 } from "./ui";
 
 interface Props {
-  // "todos": qualquer pessoa logada (ex.: finanças pessoais).
-  papel: "admin" | "devedor" | "todos";
+  // "admin": exige e-mail confirmado (todo mundo confirmado é admin). "todos": qualquer pessoa logada.
+  papel: "admin" | "todos";
   children: React.ReactNode;
 }
 
 export function AreaProtegida({ papel, children }: Props) {
-  const { usuario, carregando, admin, semRecebedor } = useAuth();
+  const { usuario, carregando, admin } = useAuth();
   const router = useRouter();
   const caminho = usePathname();
 
-  const papelCerto = papel === "todos" || (papel === "admin" ? admin : !admin);
+  const papelCerto = papel === "todos" || admin;
   const verificado = !!usuario?.emailVerified;
 
   useEffect(() => {
     if (carregando) return;
     if (!usuario) router.replace("/login");
-    else if (verificado && !semRecebedor && !papelCerto)
-      router.replace(admin ? "/admin" : "/minhas-dividas");
-  }, [carregando, usuario, verificado, semRecebedor, papelCerto, admin, router]);
+    else if (verificado && !papelCerto) router.replace("/financas");
+  }, [carregando, usuario, verificado, papelCerto, router]);
 
   if (carregando || !usuario) return <Carregando />;
   if (!verificado) return <VerificarEmail />;
-  if (semRecebedor) return <DefinirRecebedor />;
   if (!papelCerto) return <Carregando />;
 
   const nome = usuario.displayName || usuario.email || "";
   const abas: { href: string; rotulo: string; icone: NomeIcone }[] = [
     { href: "/financas", rotulo: "Finanças", icone: "grafico" },
-    admin
-      ? { href: "/admin", rotulo: "Cobranças", icone: "cobranca" }
-      : { href: "/minhas-dividas", rotulo: "Minhas dívidas", icone: "carteira" },
+    { href: "/admin", rotulo: "Cobranças", icone: "cobranca" },
+    { href: "/minhas-dividas", rotulo: "Minhas dívidas", icone: "carteira" },
   ];
 
   return (
@@ -128,52 +124,6 @@ function TelaCentral({
         {children}
       </div>
     </div>
-  );
-}
-
-function DefinirRecebedor() {
-  const { usuario } = useAuth();
-  const [ocupado, setOcupado] = useState(false);
-  const [erro, setErro] = useState("");
-  const email = usuario?.email?.toLowerCase() ?? "";
-
-  async function definir() {
-    setOcupado(true);
-    setErro("");
-    try {
-      await setDoc(doc(db(), "config", "admins"), { emails: [email] });
-    } catch {
-      setErro("Não foi possível salvar. Confira se as regras do Firestore foram publicadas.");
-      setOcupado(false);
-    }
-  }
-
-  return (
-    <TelaCentral icone={<Logo tamanho="lg" />} titulo="Configuração inicial">
-      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-        Ainda ninguém foi definido como <strong className="text-white">recebedor</strong> — a
-        pessoa que cadastra as dívidas e recebe os PIX.
-      </p>
-      <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-left">
-        <Avatar nome={usuario?.displayName || email} />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">{usuario?.displayName || "Você"}</p>
-          <p className="truncate font-mono text-xs text-zinc-500">{email}</p>
-        </div>
-      </div>
-      {erro && <p className="mt-4 rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{erro}</p>}
-      <div className="mt-6 flex flex-col gap-2">
-        <button onClick={definir} disabled={ocupado} className={botaoPrimario}>
-          <Icone nome="raio" /> {ocupado ? "Salvando…" : "Sou eu quem recebe"}
-        </button>
-        <button onClick={() => signOut(auth())} className={botaoFantasma + " mx-auto mt-1"}>
-          Não sou eu — sair
-        </button>
-      </div>
-      <p className="mt-4 text-xs text-zinc-500">
-        Depois você pode adicionar outros recebedores pelo painel.
-      </p>
-    </TelaCentral>
   );
 }
 

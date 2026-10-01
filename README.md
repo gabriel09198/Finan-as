@@ -29,10 +29,7 @@ npm install
 npm run dev
 ```
 
-Abra <http://localhost:3000>, crie sua conta e confirme o e-mail. No primeiro acesso, como ainda
-não existe recebedor, o app pergunta se você é quem recebe — clique em **"Sou eu quem recebe"** e
-cadastre sua chave PIX. Depois dá para adicionar outros recebedores pelo botão **Recebedores** no
-painel. Quem paga é definido pelo e-mail informado em cada dívida.
+Abra <http://localhost:3000>, crie sua conta e confirme o e-mail. **Todo mundo com e-mail confirmado é admin**: vê e edita todas as cobranças, compras, modelos e a chave PIX. Quem ainda não confirmou o e-mail só acessa a tela de confirmação.
 
 ## Como funciona
 

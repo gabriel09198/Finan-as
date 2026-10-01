@@ -54,7 +54,7 @@ export default function FinancasPage() {
 type Filtro = "todas" | TipoTransacao;
 
 function Financas() {
-  const { usuario, admin } = useAuth();
+  const { usuario } = useAuth();
   const [transacoes, setTransacoes] = useState<Transacao[] | null>(null);
   const [dividas, setDividas] = useState<Divida[]>([]);
   const [erro, setErro] = useState("");
@@ -75,16 +75,11 @@ function Financas() {
     );
   }, [uid]);
 
-  // Dívidas entram como um resumo: quem recebe vê o que tem a receber, os demais o que devem.
+  // Resumo das dívidas da própria pessoa (o que ela deve).
   useEffect(() => {
     if (!email || !uid) return;
-    if (!admin) return ouvirMinhasDividas(email, uid, setDividas, () => setDividas([]));
-    return onSnapshot(
-      collection(db(), "dividas"),
-      (snap) => setDividas(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Divida)),
-      () => setDividas([]),
-    );
-  }, [email, uid, admin]);
+    return ouvirMinhasDividas(email, uid, setDividas, () => setDividas([]));
+  }, [email, uid]);
 
   const resumo = useMemo(() => {
     const lista = transacoes ?? [];
@@ -116,9 +111,9 @@ function Financas() {
   const totalDividas = useMemo(
     () =>
       dividas
-        .filter((d) => (admin ? d.status !== "pago" : d.status === "pendente"))
+        .filter((d) => d.status === "pendente")
         .reduce((s, d) => s + d.valor, 0),
-    [dividas, admin],
+    [dividas],
   );
 
   const lista = useMemo(() => {
@@ -222,11 +217,11 @@ function Financas() {
             <p className="mt-1 text-xs text-zinc-500">Tudo que entrou menos tudo que saiu</p>
           </div>
           <Link
-            href={admin ? "/admin" : "/minhas-dividas"}
+            href="/minhas-dividas"
             className={`${painel} group block p-5 transition hover:border-cyan-400/30`}
           >
             <div className="flex items-center justify-between">
-              <Rotulo>{admin ? "A receber" : "Dívidas em aberto"}</Rotulo>
+              <Rotulo>Minhas dívidas em aberto</Rotulo>
               <Icone
                 nome="direita"
                 className="h-4 w-4 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-300"
@@ -236,7 +231,7 @@ function Financas() {
               {formatarReais(totalDividas)}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              {admin ? "Cobranças ainda não pagas" : "Toque para pagar com PIX"}
+              Toque para pagar com PIX
             </p>
           </Link>
         </div>
