@@ -20,26 +20,13 @@ service cloud.firestore {
       );
     }
 
-    // Lista de recebedores.
-    match /config/admins {
-      allow read: if request.auth != null;
-      // Primeiro acesso: se ainda não há recebedor, uma conta verificada
-      // pode se definir como recebedor (só ela mesma).
-      allow create: if verificado()
-        && request.resource.data.emails == [request.auth.token.email];
-      // Depois disso, só um recebedor adiciona/remove outros (nunca deixando vazio).
-      allow update: if isAdmin()
-        && request.resource.data.emails is list
-        && request.resource.data.emails.size() > 0;
-    }
-
-    // Chave PIX: qualquer usuário logado lê, só recebedor altera.
+    // Chave PIX: qualquer usuário logado lê, admins alteram.
     match /config/pix {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    // Perfil (nome + e-mail): a pessoa grava o próprio; o recebedor lê todos
+    // Perfil (nome + e-mail): a pessoa grava o próprio; admins leem todos
     // para poder selecionar participantes de uma compra.
     match /usuarios/{uid} {
       allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
@@ -57,7 +44,7 @@ service cloud.firestore {
         && request.resource.data.data is string;
     }
 
-    // Modelos de compra em grupo: só quem recebe vê e edita.
+    // Modelos de compra em grupo.
     match /modelos/{modeloId} {
       allow read, write: if isAdmin();
     }
@@ -73,8 +60,6 @@ service cloud.firestore {
 
       allow delete: if isAdmin();
 
-      // Recebedor altera qualquer coisa. O devedor só pode avisar que pagou:
-      // pendente -> aguardando_confirmacao, sem mexer em mais nada.
       allow update: if isAdmin() || (
         isDono(resource.data)
         && resource.data.status == 'pendente'

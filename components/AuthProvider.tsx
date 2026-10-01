@@ -28,7 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!firebaseConfigurado) return;
-    return onAuthStateChanged(auth(), (u) => {
+    return onAuthStateChanged(auth(), async (u) => {
+      // Quem confirmou o e-mail em outra aba/aparelho fica com o token antigo
+      // (email_verified = false) por até 1h, e as regras do Firestore recusam.
+      // Se o usuário já está verificado mas o token não, renova o token antes de liberar.
+      if (u?.emailVerified) {
+        try {
+          const token = await u.getIdTokenResult();
+          if (token.claims.email_verified !== true) await u.getIdToken(true);
+        } catch {
+          // sem rede: segue com o token atual
+        }
+      }
       setUsuario(u);
       setCarregando(false);
     });
