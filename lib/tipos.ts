@@ -24,6 +24,7 @@ export interface Divida {
   itens?: ItemValor[];
   custos?: ItemValor[]; // parte da pessoa nos custos divididos (frete, taxa…)
   totalCompra?: number; // total da pessoa na compra (itens + custos)
+  pedidoObservacoes?: string; // anotações da compra, iguais em todas as parcelas
 }
 
 export interface ItemValor {

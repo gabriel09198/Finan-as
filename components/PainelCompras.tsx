@@ -22,6 +22,7 @@ interface Participante {
 export interface Pedido {
   id: string;
   titulo: string;
+  observacoes: string;
   totalParcelas: number;
   vencimentos: string[];
   participantes: Participante[];
@@ -40,6 +41,7 @@ export function agruparPedidos(dividas: Divida[]): Pedido[] {
       ({
         id: d.pedidoId,
         titulo: d.pedidoTitulo ?? "Compra em grupo",
+        observacoes: d.pedidoObservacoes ?? "",
         totalParcelas: d.totalParcelas ?? 1,
         vencimentos: [],
         participantes: [],
@@ -85,6 +87,7 @@ export function pedidoParaModelo(pedido: Pedido): ModeloCompra {
     numParcelas: pedido.totalParcelas,
     // Custos e itens mudam a cada compra: mantém só os nomes dos custos e as pessoas.
     custos: (pedido.participantes[0]?.custos ?? []).map((c) => ({ descricao: c.descricao, valor: 0 })),
+    observacoes: "",
     participantes: pedido.participantes.map((p) => ({
       nome: p.nome,
       email: p.email,
@@ -115,6 +118,7 @@ export function previaDoModelo(modelo: ModeloCompra): Pedido | undefined {
       criadoEm: null,
       pedidoId: "previa",
       pedidoTitulo: modelo.titulo,
+      pedidoObservacoes: modelo.observacoes ?? "",
       parcela: pa.numero,
       totalParcelas: p.parcelas.length,
       itens: p.itens,
@@ -280,6 +284,8 @@ export function CartaoPedido({
             </table>
           </div>
 
+          <Observacoes texto={pedido.observacoes} />
+
           {!somenteLeitura && (
             <p className="mt-3 text-xs text-zinc-500">
               Clique numa parcela para confirmar o recebimento (ou reabrir, se já estiver paga).
@@ -396,7 +402,7 @@ export function CartaoModelo({
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate font-semibold text-white">{modelo.titulo}</p>
             <span className="rounded-full bg-cyan-400/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-cyan-300 ring-1 ring-inset ring-cyan-400/25">
-              {exemplo ? "Exemplo da planilha" : "Modelo"}
+              {exemplo ? "Base da planilha" : "Modelo"}
             </span>
           </div>
           <div className="mt-1 flex items-center gap-3">
@@ -440,6 +446,27 @@ export function CartaoModelo({
           <CartaoPedido pedido={previa} somenteLeitura />
         </div>
       )}
+    </div>
+  );
+}
+
+/** Lista de anotações da compra (uma por linha). */
+export function Observacoes({ texto }: { texto?: string }) {
+  const linhas = (texto ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (!linhas.length) return null;
+  return (
+    <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-4">
+      <p className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-amber-300/80">
+        <Icone nome="recibo" className="h-3.5 w-3.5" /> Observações
+      </p>
+      <ul className="space-y-1 text-sm text-amber-100/90">
+        {linhas.map((l, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="text-amber-300/60">•</span>
+            {l}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

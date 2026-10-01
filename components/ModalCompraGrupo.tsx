@@ -118,6 +118,7 @@ export function ModalCompraGrupo({
   const [pessoas, setPessoas] = useState<PessoaForm[]>(() =>
     modelo?.participantes.length ? modelo.participantes.map((p) => novaPessoa(p)) : [novaPessoa()],
   );
+  const [observacoes, setObservacoes] = useState(modelo?.observacoes ?? "");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
@@ -182,6 +183,7 @@ export function ModalCompraGrupo({
       numParcelas: parcelas,
       primeiroVencimento: vencimento || primeiroVencimentoPadrao(),
       custos: paraItens(custos),
+      observacoes: observacoes.trim(),
       participantes: pessoas
         .filter((p) => p.nome.trim() || p.email.trim())
         .map((p) => ({
@@ -240,6 +242,7 @@ export function ModalCompraGrupo({
             itens: p.itens,
             custos: p.custos,
             totalCompra: p.total,
+            pedidoObservacoes: observacoes.trim(),
           });
         }
       }
@@ -396,6 +399,20 @@ export function ModalCompraGrupo({
               Adicionar participante
             </button>
           </div>
+        </section>
+
+        {/* Observações */}
+        <section>
+          <Rotulo className="mb-2">Observações</Rotulo>
+          <textarea
+            className={inputCls + " h-24 resize-y text-sm"}
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            placeholder={"Anotações da compra, uma por linha (não entram nos totais).\nEx.: Idel deve + 10 reais pelo Shanks"}
+          />
+          <p className="mt-1 text-xs text-zinc-500">
+            Aparecem para todos que participam da compra. Não alteram os valores.
+          </p>
         </section>
 
         {/* Resumo */}

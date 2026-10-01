@@ -17,6 +17,8 @@ export interface ModeloCompra {
   primeiroVencimento?: string;
   custos: ItemValor[];
   participantes: ParticipanteRascunho[];
+  /** Anotações livres da compra (uma por linha), como as notas da planilha. */
+  observacoes?: string;
 }
 
 export interface ParcelaCalculada {
@@ -55,7 +57,7 @@ export function calcularCompra(
   const n = participantes.length || 1;
 
   return participantes.map((pessoa, indice) => {
-    const p = Math.max(1, Math.floor(pessoa.parcelas || numParcelas));
+    let p = Math.max(1, Math.floor(pessoa.parcelas || numParcelas));
     const subtotal = centavos(pessoa.itens.reduce((s, i) => s + i.valor, 0));
     // Divide cada custo em centavos inteiros; o resto (ex.: 1 centavo) vai para
     // os primeiros participantes, para a soma das partes bater com o custo.
@@ -67,6 +69,10 @@ export function calcularCompra(
         return { descricao: c.descricao, valor: parte / 100 };
       });
     const total = centavos(subtotal + custos.reduce((s, c) => s + c.valor, 0));
+    // Nunca mais parcelas do que centavos: cada parcela precisa ser ≥ R$ 0,01
+    // (as regras do Firestore recusam cobrança com valor 0).
+    const totalCentavos = Math.round(total * 100);
+    if (totalCentavos > 0) p = Math.min(p, totalCentavos);
 
     const base = Math.floor((total / p) * 100) / 100;
     const parcelas = Array.from({ length: p }, (_, i) => ({

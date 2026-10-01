@@ -37,7 +37,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import type { ModeloCompra } from "@/lib/compras";
-import { EXEMPLO_COMPRA } from "@/lib/exemploCompra";
+import { EXEMPLO_COMPRA, ID_MODELO_BASE } from "@/lib/exemploCompra";
 import { db } from "@/lib/firebase";
 import {
   estaVencida,
@@ -319,28 +319,30 @@ function Painel() {
             cobranças”.
           </p>
         </div>
-        {modelos.length > 0 ? (
-          modelos.map((m) => (
-            <CartaoModelo
-              key={m.id}
-              modelo={m}
-              onEditar={() => setNovaCompra({ modelo: m, modeloId: m.id })}
-              onUsar={() => setNovaCompra({ modelo: m })}
-              onExcluir={() => {
-                if (window.confirm(`Excluir o modelo "${m.titulo}"? As cobranças já criadas não mudam.`))
-                  deleteDoc(doc(db(), "modelos", m.id));
-              }}
-            />
-          ))
-        ) : (
-          // Enquanto nada foi salvo, mostra o exemplo da planilha. Ao editar e salvar, ele vira um modelo seu.
+        {/* A base da planilha fica sempre no topo. Depois de editada e salva, vale a versão salva. */}
+        {!modelos.some((m) => m.id === ID_MODELO_BASE) && (
           <CartaoModelo
             modelo={EXEMPLO_COMPRA}
             exemplo
-            onEditar={() => setNovaCompra({ modelo: EXEMPLO_COMPRA, modeloId: "exemplo-planilha" })}
+            onEditar={() => setNovaCompra({ modelo: EXEMPLO_COMPRA, modeloId: ID_MODELO_BASE })}
             onUsar={() => setNovaCompra({ modelo: EXEMPLO_COMPRA })}
           />
         )}
+        {modelos.map((m) => (
+          <CartaoModelo
+            key={m.id}
+            modelo={m}
+            onEditar={() => setNovaCompra({ modelo: m, modeloId: m.id })}
+            onUsar={() => setNovaCompra({ modelo: m })}
+            onExcluir={() => {
+              const base = m.id === ID_MODELO_BASE;
+              const aviso = base
+                ? "Desfazer suas edições na base? Ela volta a ficar igual à planilha. As cobranças já criadas não mudam."
+                : `Excluir o modelo "${m.titulo}"? As cobranças já criadas não mudam.`;
+              if (window.confirm(aviso)) deleteDoc(doc(db(), "modelos", m.id));
+            }}
+          />
+        ))}
       </section>
 
       {pedidos.length > 0 && (

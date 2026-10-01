@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AreaProtegida } from "@/components/AreaProtegida";
 import { useAuth } from "@/components/AuthProvider";
 import { ModalPix } from "@/components/ModalPix";
+import { Observacoes } from "@/components/PainelCompras";
 import {
   BadgeStatus,
   botaoFantasma,
@@ -366,6 +367,8 @@ function CompraDoDevedor({
         <span className="text-cyan-200">próxima</span>
         <span className="text-rose-300">vencida</span>
       </div>
+
+      <Observacoes texto={base.pedidoObservacoes} />
 
       <button className={botaoFantasma + " mt-3 -ml-2"} onClick={() => setVerItens(!verItens)}>
         <Icone nome="recibo" /> {verItens ? "Esconder o que você comprou" : "Ver o que você comprou"}
