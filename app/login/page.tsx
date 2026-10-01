@@ -8,6 +8,7 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -22,7 +23,7 @@ import {
   Segmentos,
   type NomeIcone,
 } from "@/components/ui";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 type Modo = "entrar" | "cadastrar";
 
@@ -73,6 +74,12 @@ export default function LoginPage() {
       } else {
         const cred = await createUserWithEmailAndPassword(auth(), emailLimpo, senha);
         await updateProfile(cred.user, { displayName: nome.trim() });
+        // grava o nome no perfil já agora (o login dispara antes do nome existir)
+        await setDoc(
+          doc(db(), "usuarios", cred.user.uid),
+          { nome: nome.trim(), email: emailLimpo, emailVerificado: false, atualizadoEm: serverTimestamp() },
+          { merge: true },
+        ).catch(() => {});
         await sendEmailVerification(cred.user);
       }
     } catch (err) {

@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authCarregando, setAuthCarregando] = useState(firebaseConfigurado);
   // null = ainda carregando a lista de recebedores do usuário atual.
   const [admins, setAdmins] = useState<{ uid: string; emails: string[] | null } | null>(null);
-  const [, setVersao] = useState(0);
+  const [versao, setVersao] = useState(0);
 
   useEffect(() => {
     if (!firebaseConfigurado) return;
@@ -52,20 +52,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }, [usuario]);
 
-  // Perfil público mínimo (nome + e-mail) para o recebedor poder selecionar a
-  // pessoa numa compra em grupo, em vez de digitar o e-mail.
+  // Perfil mínimo (nome + e-mail + ID) para o recebedor poder selecionar a pessoa
+  // numa compra em grupo. Salvo já no primeiro login, mesmo antes de confirmar o
+  // e-mail — senão quem esquece o link de confirmação nunca aparece na lista.
   useEffect(() => {
-    if (!usuario?.emailVerified || !usuario.email) return;
+    if (!usuario?.email) return;
     setDoc(
       doc(db(), "usuarios", usuario.uid),
       {
-        nome: usuario.displayName ?? "",
+        // não apaga um nome já salvo com "" (o nome chega um instante depois no cadastro)
+        ...(usuario.displayName ? { nome: usuario.displayName } : {}),
         email: usuario.email.toLowerCase(),
+        emailVerificado: usuario.emailVerified,
         atualizadoEm: serverTimestamp(),
       },
       { merge: true },
     ).catch(() => {});
-  }, [usuario]);
+  }, [usuario, versao]);
 
   async function atualizar() {
     const u = auth().currentUser;

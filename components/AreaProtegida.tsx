@@ -87,10 +87,18 @@ export function AreaProtegida({ papel, children }: Props) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] py-1 pl-1 pr-3 sm:flex">
+            <Link
+              href="/perfil"
+              title="Meu perfil"
+              className={`flex items-center gap-2.5 rounded-full border py-1 pl-1 transition sm:pr-3 ${
+                caminho === "/perfil"
+                  ? "border-cyan-400/50 bg-cyan-400/10"
+                  : "border-white/10 bg-white/[0.03] hover:border-cyan-400/40"
+              }`}
+            >
               <Avatar nome={nome} tamanho="h-7 w-7 text-xs" />
-              <span className="max-w-[160px] truncate text-sm text-zinc-300">{nome}</span>
-            </div>
+              <span className="hidden max-w-[160px] truncate text-sm text-zinc-300 sm:inline">{nome}</span>
+            </Link>
             <button onClick={() => signOut(auth())} className={botaoFantasma} title="Sair">
               <Icone nome="sair" />
             </button>

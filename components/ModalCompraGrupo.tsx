@@ -37,6 +37,8 @@ export interface PessoaConhecida {
   email: string;
   /** ID da conta no site; ausente para quem só foi cobrado por e-mail. */
   uid?: string;
+  /** Criou conta mas ainda não confirmou o e-mail. */
+  pendente?: boolean;
 }
 
 /** "a1b2c3…" — começo do ID, só para identificar visualmente. */
@@ -354,6 +356,11 @@ export function ModalCompraGrupo({
                   >
                     <Avatar nome={c.nome || c.email} tamanho="h-6 w-6 text-[10px]" />
                     {c.nome || c.email}
+                    {c.pendente && (
+                      <span title="Ainda não confirmou o e-mail" className="text-amber-300">
+                        !
+                      </span>
+                    )}
                     {ativo && <Icone nome="check" className="h-3.5 w-3.5 text-cyan-300" />}
                   </button>
                 );
@@ -547,7 +554,9 @@ function CartaoPessoa({
               </option>
               {conhecidos.map((c) => (
                 <option key={c.email} value={c.email}>
-                  {(c.nome || c.email) + (c.uid ? ` · ID ${idCurto(c.uid)}` : "")}
+                  {(c.nome || c.email) +
+                    (c.uid ? ` · ID ${idCurto(c.uid)}` : "") +
+                    (c.pendente ? " · e-mail não confirmado" : "")}
                 </option>
               ))}
               {conhecidos.length === 0 && (

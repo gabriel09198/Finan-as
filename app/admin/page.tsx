@@ -62,6 +62,8 @@ interface Conta {
   uid: string;
   nome: string;
   email: string;
+  // false = criou conta mas ainda não clicou no link de confirmação
+  emailVerificado: boolean;
   ultimoAcesso: Date | null;
 }
 
@@ -121,6 +123,8 @@ function Painel() {
               uid: d.id,
               nome: String(d.data().nome ?? ""),
               email: String(d.data().email ?? ""),
+              // perfis antigos (sem o campo) só eram salvos depois de confirmar
+              emailVerificado: d.data().emailVerificado !== false,
               ultimoAcesso: d.data().atualizadoEm?.toDate?.() ?? null,
             }))
             .sort((a, b) => (a.nome || a.email).localeCompare(b.nome || b.email, "pt-BR")),
@@ -182,7 +186,15 @@ function Painel() {
 
   // Pessoas selecionáveis: só quem tem conta no site (identificado pelo ID).
   const conhecidos = useMemo(
-    () => contas.filter((c) => c.email).map((c) => ({ nome: c.nome, email: c.email, uid: c.uid })),
+    () =>
+      contas
+        .filter((c) => c.email)
+        .map((c) => ({
+          nome: c.nome,
+          email: c.email,
+          uid: c.uid,
+          pendente: !c.emailVerificado,
+        })),
     [contas],
   );
 
@@ -891,7 +903,17 @@ function ModalPessoas({ contas, onFechar }: { contas: Conta[]; onFechar: () => v
             <li key={c.uid} className="flex flex-wrap items-center gap-3 p-3">
               <Avatar nome={c.nome || c.email} tamanho="h-9 w-9" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-white">{c.nome || "Sem nome"}</p>
+                <p className="flex items-center gap-2 truncate text-sm font-medium text-white">
+                  {c.nome || "Sem nome"}
+                  {!c.emailVerificado && (
+                    <span
+                      title="A pessoa criou a conta mas ainda não clicou no link de confirmação enviado por e-mail (veja o spam). Até confirmar, ela não consegue ver as dívidas."
+                      className="rounded-full bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-normal uppercase tracking-wider text-amber-300 ring-1 ring-inset ring-amber-400/25"
+                    >
+                      e-mail não confirmado
+                    </span>
+                  )}
+                </p>
                 <p className="truncate font-mono text-xs text-zinc-500">{c.email}</p>
               </div>
               <div className="text-right">
