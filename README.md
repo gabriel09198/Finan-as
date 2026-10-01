@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Controle de Dívidas
 
-## Getting Started
+Sistema de finanças pessoais com controle de dívidas e pagamento via PIX.
 
-First, run the development server:
+- **Finanças (todos)** — cada pessoa registra receitas e despesas por categoria e acompanha saldo do
+  mês, saldo acumulado, taxa de economia e gráficos dos últimos 6 meses.
+
+- **Cobrador (admin)** — cadastra dívidas, vê totais, confirma pagamentos e configura a chave PIX.
+- **Devedor** — cria conta com o e-mail que passou para você, vê só as próprias dívidas, paga com
+  QR Code ou PIX copia e cola e clica em "Já paguei" para avisar.
+
+Feito com Next.js 16, Tailwind 4 e Firebase (Authentication + Firestore).
+
+## Configurando o Firebase
+
+1. Crie um projeto em <https://console.firebase.google.com>.
+2. **Authentication › Método de login** → ative **E-mail/senha**.
+3. **Firestore Database** → criar banco (modo produção).
+4. **Configurações do projeto › Seus apps** → adicione um app **Web** e copie a configuração.
+5. Copie `.env.example` para `.env.local` e preencha os valores.
+6. Publique as regras de `firestore.rules`:
+   - pelo console: **Firestore › Regras**, cole o conteúdo e clique em **Publicar**; ou
+   - pela CLI: `npx firebase-tools login` e `npx firebase-tools deploy --only firestore:rules --project SEU_PROJETO`.
+
+## Rodando
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra <http://localhost:3000>, crie sua conta e confirme o e-mail. No primeiro acesso, como ainda
+não existe recebedor, o app pergunta se você é quem recebe — clique em **"Sou eu quem recebe"** e
+cadastre sua chave PIX. Depois dá para adicionar outros recebedores pelo botão **Recebedores** no
+painel. Quem paga é definido pelo e-mail informado em cada dívida.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Como funciona
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Status                   | Quem muda                                   |
+| ------------------------ | ------------------------------------------- |
+| `pendente`               | criado pelo admin                           |
+| `aguardando_confirmacao` | devedor clica em "Já paguei"                |
+| `pago`                   | admin confirma depois de ver no extrato     |
 
-## Learn More
+A segurança fica em `firestore.rules`: as transações de cada pessoa ficam em
+`usuarios/{uid}/transacoes` e só ela acessa; só o admin cria/edita/exclui dívidas, e o devedor só lê as
+dívidas do próprio e-mail (que precisa estar confirmado) e só pode mudar o status de `pendente` para
+`aguardando_confirmacao`.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+O pagamento é PIX estático (sem integração com banco), então o app não sabe sozinho se o dinheiro
+caiu — por isso o admin confirma manualmente.
